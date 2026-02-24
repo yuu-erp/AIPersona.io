@@ -65,6 +65,26 @@ export class EnvironmentVariables {
 
   @IsString()
   JWT_EXPIRES_IN: string = '7d';
+
+  @IsOptional()
+  @IsString()
+  EMAIL_HOST?: string;
+
+  @IsOptional()
+  @IsNumber()
+  EMAIL_PORT: number = 587;
+
+  @IsOptional()
+  @IsString()
+  EMAIL_USERNAME?: string;
+
+  @IsOptional()
+  @IsString()
+  EMAIL_PASSWORD?: string;
+
+  @IsOptional()
+  @IsString()
+  EMAIL_FROM?: string;
 }
 
 export function validate(

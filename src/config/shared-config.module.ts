@@ -4,6 +4,7 @@ import aiConfig from './ai.config';
 import appConfig from './app.config';
 import authConfig from './auth.config';
 import databaseConfig from './database.config';
+import emailConfig from './email.config';
 import { validate } from './env.validation';
 import redisConfig from './redis.config';
 import socialConfig from './social.config';
@@ -19,6 +20,7 @@ import socialConfig from './social.config';
         aiConfig,
         socialConfig,
         authConfig,
+        emailConfig,
       ],
       validate,
       cache: true,
