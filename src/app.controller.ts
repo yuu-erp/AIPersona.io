@@ -2,7 +2,6 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { AppService } from './app.service';
 import { EmailVerifyService } from './services/mail';
 import { Public } from './decorators';
-
 @Public()
 @Controller()
 export class AppController {
