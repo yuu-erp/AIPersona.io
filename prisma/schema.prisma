@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 1. Quản lý Người dùng
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String?
+  fullName     String?
+  avatarUrl    String?
+  provider     String   @default("local") // 'local', 'google'
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Quan hệ
+  channels SocialChannel[]
+  personas AiPersona[]
+  posts    Post[]
+
+  @@map("users")
+}
+
+// 2. Quản lý Kênh Mạng Xã Hội (TikTok, FB, IG)
+model SocialChannel {
+  id             String    @id @default(uuid())
+  userId         String
+  platform       String // 'tiktok', 'facebook', 'instagram'
+  platformUserId String? // ID từ API của nền tảng
+  username       String? // Ví dụ: @yuuerp
+  accessToken    String    @db.Text
+  refreshToken   String?   @db.Text
+  tokenExpiresAt DateTime?
+
+  // Thông số kênh (Analytics)
+  followerCount Int   @default(0)
+  videoCount    Int   @default(0)
+  metadata      Json? // Lưu bio, total_likes, engagement rate...
+
+  status    String   @default("active") // 'active', 'expired', 'disconnected'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan hệ
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts Post[]
+
+  @@map("social_channels")
+}
+
+// 3. Nhân vật AI (AI Persona) - Giữ tính nhất quán
+model AiPersona {
+  id               String  @id @default(uuid())
+  userId           String
+  name             String // Tên nhân vật Cosplayer
+  baseFaceImageUrl String? // Ảnh gốc để Face Swap
+  loraModelPath    String? // Đường dẫn file model đã train riêng
+  description      String? @db.Text
+
+  // Cấu hình AI để giữ vóc dáng/style (Seed, Prompt cố định, ControlNet params)
+  featuresConfig Json?
+
+  isTrained Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan hệ
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts Post[]
+
+  @@map("ai_personas")
+}
+
+// 4. Bài viết & Lập lịch đăng (Posts/Content)
+model Post {
+  id        String  @id @default(uuid())
+  userId    String
+  channelId String?
+  personaId String?
+
+  title    String?
+  caption  String? @db.Text
+  mediaUrl String // Link video/ảnh đã qua xử lý AI
+
+  // Trạng thái: 'draft', 'scheduled', 'processing', 'published', 'failed'
+  status String @default("draft")
+
+  scheduledAt    DateTime?
+  publishedAt    DateTime?
+  platformPostId String? // ID bài viết sau khi đăng lên mạng xã hội
+  errorLog       String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan hệ
+  user    User           @relation(fields: [userId], references: [id])
+  channel SocialChannel? @relation(fields: [channelId], references: [id])
+  persona AiPersona?     @relation(fields: [personaId], references: [id])
+
+  @@map("posts")
+}
