@@ -7,7 +7,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { AppLoggerService } from '../services/logger/logger.service';
 import { Request } from 'express';
-import { DECORATOR } from 'src/decorators';
+import { DECORATOR } from '../decorators';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
