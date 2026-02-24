@@ -9,7 +9,7 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     // 1. Lấy connection string từ ConfigService (đã setup ở bước trước)
     const connectionString = configService.get<string>('database.url');
 
