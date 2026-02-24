@@ -13,101 +13,144 @@ datasource db {
   provider = "postgresql"
 }
 
-// 1. Quản lý Người dùng
-model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String?
-  fullName     String?
-  avatarUrl    String?
-  provider     String   @default("local") // 'local', 'google'
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+// --- ENUMS ---
 
-  // Quan hệ
-  channels SocialChannel[]
-  personas AiPersona[]
-  posts    Post[]
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum PlanType {
+  FREE
+  PRO
+  ULTRA
+}
+
+enum PostStatus {
+  DRAFT
+  PROCESSING
+  PENDING_APPROVAL
+  REJECTED
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+}
+
+enum SocialPlatform {
+  TIKTOK
+  FACEBOOK
+  INSTAGRAM
+  TWITTER
+  YOUTUBE
+}
+
+// --- MODELS ---
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password        String? // Nullable nếu chỉ dùng Google Login
+  fullName        String?
+  avatarUrl       String?
+  role            UserRole @default(USER)
+  isEmailVerified Boolean  @default(false)
+
+  // Quản lý gói cước
+  plan             PlanType  @default(FREE)
+  planExpiresAt    DateTime?
+  customerStripeId String?   @unique
+
+  // Relations
+  personas       AiPersona[]
+  socialAccounts SocialAccount[]
+  posts          Post[]
+  dailyQuotas    DailyQuota[] // Theo dõi lượt dùng hàng ngày
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
 
-// 2. Quản lý Kênh Mạng Xã Hội (TikTok, FB, IG)
-model SocialChannel {
-  id             String    @id @default(uuid())
-  userId         String
-  platform       String // 'tiktok', 'facebook', 'instagram'
-  platformUserId String? // ID từ API của nền tảng
-  username       String? // Ví dụ: @yuuerp
-  accessToken    String    @db.Text
-  refreshToken   String?   @db.Text
-  tokenExpiresAt DateTime?
-
-  // Thông số kênh (Analytics)
-  followerCount Int   @default(0)
-  videoCount    Int   @default(0)
-  metadata      Json? // Lưu bio, total_likes, engagement rate...
-
-  status    String   @default("active") // 'active', 'expired', 'disconnected'
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Quan hệ
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  posts Post[]
-
-  @@map("social_channels")
-}
-
-// 3. Nhân vật AI (AI Persona) - Giữ tính nhất quán
 model AiPersona {
-  id               String  @id @default(uuid())
-  userId           String
-  name             String // Tên nhân vật Cosplayer
-  baseFaceImageUrl String? // Ảnh gốc để Face Swap
-  loraModelPath    String? // Đường dẫn file model đã train riêng
-  description      String? @db.Text
+  id             String  @id @default(uuid())
+  name           String
+  baseFaceUrl    String // Ảnh gốc để swap face
+  loraModelPath  String? // Path tới file LoRA nếu có
+  featuresConfig Json // { eyeColor: string, bodyType: string, etc. } - Type-safe via DTO
 
-  // Cấu hình AI để giữ vóc dáng/style (Seed, Prompt cố định, ControlNet params)
-  featuresConfig Json?
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  isTrained Boolean  @default(false)
+  posts Post[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Quan hệ
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  posts Post[]
 
   @@map("ai_personas")
 }
 
-// 4. Bài viết & Lập lịch đăng (Posts/Content)
-model Post {
-  id        String  @id @default(uuid())
-  userId    String
-  channelId String?
-  personaId String?
+model SocialAccount {
+  id           String         @id @default(uuid())
+  platform     SocialPlatform
+  platformId   String // ID của user trên TikTok/FB
+  accountName  String?
+  accessToken  String         @db.Text
+  refreshToken String?        @db.Text
+  expiresAt    DateTime?
 
-  title    String?
-  caption  String? @db.Text
-  mediaUrl String // Link video/ảnh đã qua xử lý AI
+  // Chế độ kiểm duyệt cho từng kênh
+  isModerationEnabled Boolean @default(true)
 
-  // Trạng thái: 'draft', 'scheduled', 'processing', 'published', 'failed'
-  status String @default("draft")
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  scheduledAt    DateTime?
-  publishedAt    DateTime?
-  platformPostId String? // ID bài viết sau khi đăng lên mạng xã hội
-  errorLog       String?   @db.Text
+  posts Post[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Quan hệ
-  user    User           @relation(fields: [userId], references: [id])
-  channel SocialChannel? @relation(fields: [channelId], references: [id])
-  persona AiPersona?     @relation(fields: [personaId], references: [id])
+  @@unique([platform, platformId])
+  @@map("social_accounts")
+}
+
+model Post {
+  id          String     @id @default(uuid())
+  title       String?
+  content     String?    @db.Text
+  mediaUrl    String? // Video hoặc ảnh đã render xong
+  status      PostStatus @default(DRAFT)
+  scheduledAt DateTime? // Thời gian đăng dự kiến
+  publishedAt DateTime? // Thời gian thực tế đã đăng
+
+  // Metadata cho AI
+  aiPrompt   String? @db.Text
+  aiMetadata Json? // Lưu log từ AI Worker (Seed, Sampler...)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  personaId String?
+  persona   AiPersona? @relation(fields: [personaId], references: [id])
+
+  channelId String?
+  channel   SocialAccount? @relation(fields: [channelId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("posts")
+}
+
+model DailyQuota {
+  id         String   @id @default(uuid())
+  userId     String
+  date       DateTime @default(now()) @db.Date // Chỉ lưu ngày YYYY-MM-DD
+  videoCount Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("daily_quotas")
 }

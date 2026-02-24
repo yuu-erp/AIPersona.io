@@ -80,5 +80,5 @@ export function validate(
   if (errors.length > 0) {
     throw new Error(errors.toString());
   }
-  return validatedConfig as EnvironmentVariables;
+  return validatedConfig;
 }

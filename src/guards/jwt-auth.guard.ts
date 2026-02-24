@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { AppLoggerService } from '../service/logger/logger.service';
+import { AppLoggerService } from '../services/logger/logger.service';
 import { Request } from 'express';
 import { DECORATOR } from 'src/decorators';
 

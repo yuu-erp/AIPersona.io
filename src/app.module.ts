@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
+import { SharedConfigModule } from 'src/config';
+import { GlobalExceptionFilter } from 'src/exceptions';
+import { CustomValidationPipe } from 'src/pipes';
+import { LoggerModule } from 'src/services/logger';
+import { PrismaModule } from 'src/services/prisma';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { SharedConfigModule } from './config/shared-config.module';
-import { PrismaModule } from './service/prisma/prisma.module';
-import { LoggerModule } from './service/logger/logger.module';
-import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
@@ -24,6 +26,11 @@ import { UserModule } from './modules/user/user.module';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
+    { provide: APP_PIPE, useClass: CustomValidationPipe },
   ],
 })
 export class AppModule {}
