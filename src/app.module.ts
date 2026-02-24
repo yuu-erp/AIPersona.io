@@ -6,9 +6,17 @@ import { PrismaModule } from './service/prisma/prisma.module';
 import { LoggerModule } from './service/logger/logger.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AuthModule } from './modules/auth/auth.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
-  imports: [SharedConfigModule, PrismaModule, LoggerModule],
+  imports: [
+    SharedConfigModule,
+    PrismaModule,
+    LoggerModule,
+    AuthModule,
+    UserModule,
+  ],
   controllers: [AppController],
   providers: [
     AppService,
