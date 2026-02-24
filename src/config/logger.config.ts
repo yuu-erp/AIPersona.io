@@ -1,6 +1,6 @@
+import { WinstonModuleOptions } from 'nest-winston';
 import { format, transports } from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import { WinstonModuleOptions } from 'nest-winston';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -35,7 +35,7 @@ export const loggerConfig: WinstonModuleOptions = {
       maxFiles: '14d',
       level: 'error',
       format: format.combine(format.timestamp(), format.json()),
-    } as any),
+    }),
     // File transport - Combined logs
     new DailyRotateFile({
       filename: 'logs/combined-%DATE%.log',
@@ -44,6 +44,6 @@ export const loggerConfig: WinstonModuleOptions = {
       maxSize: '20m',
       maxFiles: '30d',
       format: format.combine(format.timestamp(), format.json()),
-    } as any),
+    }),
   ],
 };
