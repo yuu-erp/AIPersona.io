@@ -5,9 +5,9 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { AppLoggerService } from '../../service/logger/logger.service';
+import { AppLoggerService } from '../service/logger/logger.service';
 import { Request } from 'express';
+import { DECORATOR } from 'src/decorators';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -20,27 +20,27 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext) {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const isPublic = this.reflector.getAllAndOverride<boolean>(
+      DECORATOR.IS_PUBLIC,
+      [context.getHandler(), context.getClass()],
+    );
     if (isPublic) {
       return true;
     }
     return super.canActivate(context);
   }
 
-  handleRequest<TUser = any>(
-    err: any,
+  handleRequest<TUser = unknown>(
+    err: unknown,
     user: TUser,
-    info: any,
+    info: unknown,
     context: ExecutionContext,
   ): TUser {
     if (err || !user) {
       const request = context.switchToHttp().getRequest<Request>();
       const { method, url } = request;
       this.logger.warn(`Unauthorized access to ${method} ${url}`);
-      throw err || new UnauthorizedException();
+      throw err instanceof Error ? err : new UnauthorizedException();
     }
     return user;
   }
