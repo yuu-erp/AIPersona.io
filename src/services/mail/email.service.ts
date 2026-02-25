@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, Transporter } from 'nodemailer';
-import { retry } from 'src/helpers/retry';
 import { AppLoggerService } from '../logger';
 import { readFile } from 'fs/promises';
 import { compile } from 'handlebars';
 import Mail from 'nodemailer/lib/mailer';
+import retry from 'async-retry';
 
 export interface EmailInfo {
   template: string;
@@ -48,21 +48,27 @@ export class EmailService {
       subject: this.emailInfo.subject,
       html: html(param),
     };
-    try {
-      await this.client.sendMail(emailOptions);
-      this.logger.log(`Email sent to ${email}`);
-    } catch (error) {
+
+    await retry(
+      async () => {
+        await this.client.sendMail(emailOptions);
+        this.logger.log(`Email sent to ${email}`);
+      },
+      {
+        retries: this.RETRIES_EMAIL_NUMBER,
+        minTimeout: this.DELAY_RETRY_EMAIL,
+        onRetry: (error, attempt) => {
+          this.logger.warn(
+            `Failed to send email to ${email}. Retrying... (Attempt ${attempt}/${this.RETRIES_EMAIL_NUMBER})`,
+          );
+        },
+      },
+    ).catch((error) => {
       this.logger.error(
-        `Failed to send verification email to ${email}`,
+        `Failed to send email to ${email} after ${this.RETRIES_EMAIL_NUMBER} retries`,
         error instanceof Error ? error.stack : undefined,
       );
-      await retry(
-        () => this.client.sendMail(emailOptions),
-        this.RETRIES_EMAIL_NUMBER,
-        this.DELAY_RETRY_EMAIL,
-        this.logger,
-      );
-    }
+    });
   }
 
   private async readEmailTemplate(): Promise<string> {

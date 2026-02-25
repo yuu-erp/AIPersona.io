@@ -31,4 +31,24 @@ export class UserRepository {
       where,
     });
   }
+
+  async findAll(params: {
+    skip?: number;
+    take?: number;
+    where?: Prisma.UserWhereInput;
+    orderBy?: Prisma.UserOrderByWithRelationInput;
+  }): Promise<{ users: User[]; total: number }> {
+    const { skip, take, where, orderBy } = params;
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        skip,
+        take,
+        where,
+        orderBy,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return { users, total };
+  }
 }
