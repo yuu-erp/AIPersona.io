@@ -14,8 +14,19 @@ datasource db {
   provider = "postgresql"
 }
 
+enum USER_TYPE {
+  ADMIN
+  USER
+}
+
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id         Int       @id @default(autoincrement())
+  email      String    @unique
+  password   String
+  name       String?
+  role       USER_TYPE @default(USER)
+  avatar     String?
+  isVerified Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
