@@ -25,17 +25,11 @@ export default tseslint.config(
     },
   },
   {
-  rules: {
-    '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-floating-promises': 'warn',
-    '@typescript-eslint/no-unsafe-argument': 'warn',
-    
-    // Thêm 2 dòng này để bỏ qua lỗi bạn đang gặp
-    '@typescript-eslint/no-unsafe-assignment': 'off',
-    '@typescript-eslint/no-unsafe-call': 'off',
-    '@typescript-eslint/no-unsafe-member-access': 'off', // Thường đi kèm với 2 lỗi trên
-
-    "prettier/prettier": ["error", { endOfLine: "auto" }],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      'prettier/prettier': ['error', { endOfLine: 'auto' }],
+    },
   },
-},
 );
